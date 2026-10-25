@@ -21,14 +21,14 @@ def number(value, low, high, name, integer=False):
     if (
         isinstance(value, bool)
         or not isinstance(value, (int, float))
-        or not math.isfinite(value)
         or not low <= value <= high
+        or not math.isfinite(value)
         or (integer and int(value) != value)
     ):
         raise ProjectError(
             f"{name} must be {'an integer' if integer else 'a number'} in [{low}, {high}]"
         )
-    return value
+    return int(value) if integer else value
 
 
 def default_project(mode="catch"):
@@ -120,7 +120,10 @@ def validate(data):
         number(rule["amount"], -10000, 10000, f"rule {i + 1} amount")
         if rule["action"] == "lose_life":
             number(rule["amount"], 1, 100, f"rule {i + 1} lives", True)
-    return copy.deepcopy(data)
+    result = copy.deepcopy(data)
+    for name in ("width", "height", "target_score", "lives", "seed"):
+        result[name] = int(result[name])
+    return result
 
 
 def load_project(path):

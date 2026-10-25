@@ -27,6 +27,8 @@ class Studio(ttk.Frame):
         self.project = default_project()
         self.path = None
         self.history = []
+        self.saved_project = copy.deepcopy(self.project)
+        self.previews = []
         self.vars = {}
         root.title("GameScript Studio · Visual mini-game compiler")
         root.geometry("1180x830")
@@ -37,11 +39,18 @@ class Studio(ttk.Frame):
             ("New", self.new),
             ("Open", self.open),
             ("Save", self.save),
+            ("Save as", self.save_as),
             ("Undo rule edit", self.undo),
             ("Preview game", self.preview),
             ("Export HTML + JS", self.export),
         ]:
             ttk.Button(toolbar, text=label, command=command).pack(side="left", padx=3)
+        templates = ttk.Menubutton(toolbar, text="Examples")
+        menu = tk.Menu(templates, tearoff=False)
+        for mode in ("tap", "catch", "dodge"):
+            menu.add_command(label=f"{mode.title()} game", command=lambda m=mode: self.example(m))
+        templates.configure(menu=menu)
+        templates.pack(side="left", padx=3)
         ttk.Label(self, text="GameScript Studio", font=("Segoe UI", 22, "bold")).pack(anchor="w")
         ttk.Label(
             self, text="Configure your game. Build rules visually. Export code you own."
@@ -142,15 +151,23 @@ class Studio(ttk.Frame):
         self.code_text = tk.Text(code, wrap="none", font=("Consolas", 10))
         self.code_text.pack(fill="both", expand=True)
         scroll = ttk.Scrollbar(code, command=self.code_text.yview)
+        scroll.pack(side="right", fill="y")
         self.code_text.configure(yscrollcommand=scroll.set)
         self.status = tk.StringVar(value="Ready — source is editable, offline, and MIT licensed.")
         ttk.Label(self, textvariable=self.status).pack(anchor="w", pady=(12, 0))
         root.bind("<Control-s>", lambda e: self.save())
         root.bind("<Control-o>", lambda e: self.open())
+        root.bind("<F5>", lambda e: self.preview())
+        root.protocol("WM_DELETE_WINDOW", self.close)
         self.populate()
 
     def color(self, key):
-        c = colorchooser.askcolor(self.vars[key].get(), parent=self.root)[1]
+        try:
+            self.root.winfo_rgb(self.vars[key].get())
+            initial = self.vars[key].get()
+        except tk.TclError:
+            initial = self.project[key]
+        c = colorchooser.askcolor(initial, parent=self.root)[1]
         if c:
             self.vars[key].set(c)
 
@@ -238,6 +255,13 @@ class Studio(ttk.Frame):
             self.history.append(previous)
             self.history = self.history[-50:]
             self.refresh()
+            if self.project["rules"]:
+                selected = len(data["rules"]) - 1 if kind == "add" else min(index, len(data["rules"]) - 1)
+                if kind in ("up", "down"):
+                    selected = target
+                self.tree.selection_set(str(selected))
+                self.tree.see(str(selected))
+                self.select()
             self.status.set("Rules updated. Save your project to keep changes.")
         except (ValueError, TypeError) as exc:
             messagebox.showerror("Invalid rule", str(exc))
@@ -248,8 +272,28 @@ class Studio(ttk.Frame):
             self.populate()
 
     def new(self):
-        if messagebox.askyesno("New project", "Start a new project? Save any changes first."):
-            self.project = default_project(self.vars["mode"].get())
+        self.example(self.vars["mode"].get())
+
+    def confirm_discard(self):
+        try:
+            changed = self.collect() != self.saved_project
+        except ValueError:
+            changed = True
+        return not changed or messagebox.askyesno(
+            "Unsaved changes", "Discard unsaved changes? Choose No to return and save your project.",
+            parent=self.root,
+        )
+
+    def close(self):
+        if self.confirm_discard():
+            for preview in self.previews:
+                preview.cleanup()
+            self.root.destroy()
+
+    def example(self, mode):
+        if self.confirm_discard():
+            self.project = default_project(mode)
+            self.saved_project = copy.deepcopy(self.project)
             self.path = None
             self.history = []
             self.populate()
@@ -260,11 +304,10 @@ class Studio(ttk.Frame):
             return
         try:
             data = load_project(path)
-            if not messagebox.askyesno(
-                "Open project", "Replace the editor contents? Save any changes first."
-            ):
+            if not self.confirm_discard():
                 return
             self.project = data
+            self.saved_project = copy.deepcopy(data)
             self.path = path
             self.history = []
             self.populate()
@@ -282,9 +325,17 @@ class Studio(ttk.Frame):
                 save_project(data, path)
                 self.path = path
                 self.project = data
+                self.saved_project = copy.deepcopy(data)
                 self.status.set(f"Saved: {path}")
         except (OSError, ValueError) as exc:
             messagebox.showerror("Save failed", str(exc))
+
+    def save_as(self):
+        original = self.path
+        self.path = None
+        self.save()
+        if self.path is None:
+            self.path = original
 
     def code(self):
         try:
@@ -296,9 +347,16 @@ class Studio(ttk.Frame):
 
     def preview(self):
         try:
-            folder = Path(tempfile.mkdtemp(prefix="gamescript-preview-")) / "game"
-            page = export_game(self.collect(), folder)
-            webbrowser.open(page.as_uri())
+            project = self.collect()
+            preview = tempfile.TemporaryDirectory(prefix="gamescript-preview-")
+            self.previews.append(preview)
+            if len(self.previews) > 10:
+                self.previews.pop(0).cleanup()
+            folder = Path(preview.name) / "game"
+            page = export_game(project, folder)
+            opened = webbrowser.open(page.as_uri())
+            if not opened:
+                messagebox.showinfo("Preview ready", f"Open this file in your browser:\n{page}")
             self.status.set(f"Preview: {folder}")
         except (OSError, ValueError) as exc:
             messagebox.showerror("Preview failed", str(exc))
