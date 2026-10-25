@@ -1,6 +1,7 @@
 "use strict";
 // Pure deterministic simulation; the browser renderer is a thin adapter.
 function createGame(config) {
+  config = JSON.parse(JSON.stringify(config));
   let state, randomState, spawnClock;
   const random = () => { randomState = (Math.imul(1664525, randomState) + 1013904223) >>> 0; return randomState / 4294967296; };
   function emit(event) {

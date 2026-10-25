@@ -1,5 +1,10 @@
 # GameScript Studio
 
+[![Tests and Windows build](https://github.com/dhawiaymen/gamescript-studio/actions/workflows/ci.yml/badge.svg)](https://github.com/dhawiaymen/gamescript-studio/actions/workflows/ci.yml)
+
+![GameScript Studio application screenshot](docs/demo/application.png)
+
+
 **Build small browser games with visual rules. Export readable JavaScript you own.**
 
 GameScript Studio is a Windows-oriented desktop tool for developers, educators,
@@ -7,8 +12,19 @@ and game-jam creators who need a small, understandable starting point instead
 of a complete game engine. It combines a settings form, an ordered rule editor,
 a visual event → condition → action diagram, and a code viewer.
 
-Version **0.1.0**, initial release candidate. MIT licensed. No account, API key,
+Version **0.1.0**, initial public version. MIT licensed. No account, API key,
 subscription, telemetry, or runtime CDN is required.
+
+## Portable Windows download
+
+Open [Releases](https://github.com/dhawiaymen/gamescript-studio/releases) and download the
+`gamescript-studio-0.1.0-windows-x64.zip` asset when the verified release is available.
+Extract **the whole archive**, then launch `GameScriptStudio/GameScriptStudio.exe`. Do not run it inside
+the ZIP or move only the EXE. The application is unsigned. No administrator
+rights or paid account is needed. Keep the bundled `licenses/` folder.
+
+See [Windows help](docs/WINDOWS.md), [troubleshooting](docs/TROUBLESHOOTING.md),
+[real demonstrations](docs/DEMO.md), and the [public roadmap](ROADMAP.md).
 
 ## What works
 
@@ -79,10 +95,7 @@ powershell -ExecutionPolicy Bypass -File scripts/build_windows.ps1
 
 Install **Node.js 20+** to run the generated-JavaScript behavioral tests.
 GUI tests run when a display is available. The GitHub workflow targets Windows
-and Ubuntu with Python 3.11–3.13 and produces a Windows folder build. A workflow
-file is not evidence of a successful hosted run; see the supplied validation
-record for checks actually performed. No prebuilt Windows executable is included
-in this source release.
+and Ubuntu with Python 3.11–3.13 and produces a Windows folder build. See [executed validation](docs/VALIDATION.md) and [Windows distribution](docs/WINDOWS.md).
 
 ## Scope and limitations
 
@@ -91,7 +104,7 @@ Luau, Unity projects, or TikTok Effect House/APJS scripts. It does not import
 arbitrary JavaScript. The visual editor is an ordered rule system, not a general
 graph engine. There is no asset importer, physics editor, multiplayer backend,
 or TypeScript exporter. Preview folders are stored in the system temporary
-directory and may be removed after the browser is closed.
+directory. The ten most recent previews remain available until you close the editor.
 
 The display surface is Canvas: the surrounding controls support keyboard use,
 but this is not a fully screen-reader-playable game framework. Time is simulated;
@@ -103,3 +116,10 @@ See [CONTRIBUTING.md](CONTRIBUTING.md), [SECURITY.md](SECURITY.md), and
 [LICENSE](LICENSE). Maintainer account: [dhawiaymen](https://github.com/dhawiaymen).
 This initial implementation was AI-assisted and includes reproducible tests.
 No user counts, stars, downloads, or community adoption are claimed.
+
+## Community
+
+Report reproducible bugs through [Issues](https://github.com/dhawiaymen/gamescript-studio/issues),
+read the [contribution guide](CONTRIBUTING.md), and discuss proposals in
+[Discussions](https://github.com/dhawiaymen/gamescript-studio/discussions) when enabled.
+Please follow our [Code of Conduct](CODE_OF_CONDUCT.md).
